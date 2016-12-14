@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:redis="http://www.springframework.org/schema/redis"
+       xmlns:p="http://www.springframework.org/schema/p"
+
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	   http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context-3.0.xsd
+       http://www.springframework.org/schema/redis
+        http://www.springframework.org/schema/redis/spring-redis-1.0.xsd">
+
+	<bean id="propertyConfigurerForReids"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="ignoreUnresolvablePlaceholders" value="true" />
+		<property name="locations">
+			<list>
+				<value>classpath:redis.properties</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="poolConfigForReids" class="redis.clients.jedis.JedisPoolConfig">
+		<property name="maxIdle" value="${redis.maxIdle}" />
+		<property name="maxWaitMillis" value="${redis.maxWaitMillis}" />
+		<property name="testOnBorrow" value="${redis.testOnBorrow}" />
+	</bean>
+
+	<bean id="connectionFactoryForReids"
+		class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory"
+		p:host-name="${redis.host}" p:port="${redis.port}" p:password="${redis.pass}"
+		p:pool-config-ref="poolConfigForReids" />
+
+	<bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate">
+		<property name="connectionFactory" ref="connectionFactoryForReids" />
+		<!--如果不配置Serializer，那么存储的时候智能使用String，如果用User类型存储，那么会提示错误User can't cast to String！！！-->
+        <property name="keySerializer">
+        <bean class="org.springframework.data.redis.serializer.StringRedisSerializer"/>
+        </property>
+        <property name="valueSerializer">
+<!--         <bean class="org.springframework.data.redis.serializer.StringRedisSerializer"/> -->
+		<bean class="org.springframework.data.redis.serializer.JdkSerializationRedisSerializer"/>
+        </property>
+	</bean>
+
+	<bean id="redisDao" class="com.ace.common.redis.RedisDaoImpl" />
+
+<!-- 	redis订阅监听器 -->
+<!-- 	<bean id="redisListener" class="com.jiadoctor.web.redisLister.RedisLister" /> -->
+	
+<!--     <redis:listener-container connection-factory="connectionFactoryForReids"> -->
+        <!-- the method attribute can be skipped as the default method name is "handleMessage"
+        topic代表监听的频道，是一个正规匹配  其实就是你要订阅的频道 -->
+<!--         <redis:listener ref="redisListener" method="handleMessage" topic="__keyevent@0__:expired" /> -->
+<!--     </redis:listener-container> -->
+    
+</beans> 
